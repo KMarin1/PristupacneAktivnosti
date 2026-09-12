@@ -19,6 +19,7 @@ JWT bearer auth · AutoMapper · Swagger
 WebAPI/     REST API — controllers, DTOs, EF Core models, JWT issuing, logging service
 WebApp/     MVC client — views and controllers that call the API
 db.sql      Schema
+seed.sql    Seed data — one transaction, IF NOT EXISTS guards, safe to re-run
 ```
 
 **API endpoints** are grouped by controller: `Aktivnosti`, `Pristupacnosti`, `Vrste`,
@@ -37,7 +38,7 @@ contract, with AutoMapper doing the translation.
 
 ## Running it
 
-1. Create the database and run `db.sql` against it.
+1. Create the database, run `db.sql`, then `seed.sql` (idempotent, re-runnable).
 2. In `WebAPI/appsettings.json`, set `ConnectionStrings:DefaultConnection` to your SQL
    Server instance and replace `Jwt:Key` with a long random string.
 3. Set the CORS origin in `WebAPI/Program.cs` to whatever port the MVC client runs on,
