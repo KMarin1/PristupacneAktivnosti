@@ -1,0 +1,98 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f0f2f5;
+}
+
+.navbar {
+    background: #4a90e2;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+}
+
+    .navbar a {
+        color: #fff;
+        text-decoration: none;
+        margin-right: 15px;
+        font-weight: 600;
+    }
+
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+
+.container {
+    max-width: 1000px;
+    margin: 30px auto;
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+    table th, table td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+
+    table th {
+        background: #4a90e2;
+        color: #fff;
+    }
+
+button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+    button.add {
+        background: #4CAF50;
+        color: #fff;
+    }
+
+    button.edit {
+        background: #FFC107;
+        color: #fff;
+    }
+
+    button.delete {
+        background: #F44336;
+        color: #fff;
+    }
+
+input, select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+}
+
+.filters {
+    margin-bottom: 15px;
+}
+
+.pagination button {
+    margin-top: 10px;
+}

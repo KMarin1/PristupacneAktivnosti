@@ -1,0 +1,19 @@
+﻿<!doctype html>
+<html>
+<body>
+    <h3>Logs</h3>
+    <select id="n"><option>10</option><option>25</option><option>50</option></select>
+    <button id="btn">Učitaj</button>
+    <button onclick="localStorage.removeItem('jwt');location='/Auth/Login'">Odjava</button>
+<pre id="out"></pre>
+    <script>
+        const api = "https://localhost:7024";
+        document.getElementById('btn').onclick = async () => {
+            const t = localStorage.getItem('jwt'); if (!t) { location = '/Auth/Login'; return; }
+            const r = await fetch(`${api}/api/Logs/get/${document.getElementById('n').value}`, { headers: { Authorization: 'Bearer ' + t } });
+            if (!r.ok) { document.getElementById('out').textContent = 'Greška: ' + await r.text(); return; }
+            const arr = await r.json(); document.getElementById('out').textContent = arr.join('\n');
+        };
+    </script>
+</body>
+</html>

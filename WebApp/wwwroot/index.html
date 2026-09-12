@@ -1,0 +1,18 @@
+﻿<!doctype html>
+<html>
+<body>
+    <h3>Static login (dev)</h3>
+    <form id="f">
+        <input id="u" placeholder="korisnicko ime" />
+        <input id="p" type="password" placeholder="lozinka" />
+        <button>Login</button>
+    </form>
+    <script>
+        document.getElementById('f').onsubmit = async (e) => {
+            e.preventDefault();
+            const r = await fetch('https://localhost:7024/api/Auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ korisnickoIme: u.value, lozinka: p.value }) });
+            const j = await r.json(); localStorage.setItem('jwt', j.token); location = '/Aktivnosti/Index';
+        };
+    </script>
+</body>
+</html>

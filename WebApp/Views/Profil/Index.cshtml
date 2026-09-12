@@ -1,0 +1,66 @@
+﻿@{
+    ViewData["Title"] = "Moj profil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>Moj profil</h2>
+
+<div id="msg" class="alert d-none"></div>
+
+<form id="profForm" class="w-100" style="max-width:520px">
+    <div class="mb-2">
+        <label class="form-label">Korisničko ime</label>
+        <input id="kime" class="form-control" disabled />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">E-mail</label>
+        <input id="email" type="email" class="form-control" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Ime</label>
+        <input id="ime" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Prezime</label>
+        <input id="prezime" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Telefon</label>
+        <input id="telefon" class="form-control" />
+    </div>
+    <button class="btn btn-primary mt-2">Spremi</button>
+</form>
+
+<script>
+    (async function(){
+      const api="https://localhost:7024";
+      const t=localStorage.getItem("jwt"); if(!t){ location="/Auth/Login"; return; }
+
+      const msg=document.getElementById("msg");
+      function show(ok, text){
+        msg.className = "alert "+(ok?"alert-success":"alert-danger");
+        msg.textContent = text;
+        msg.classList.remove("d-none");
+      }
+
+      try{
+        const r=await fetch(api+"/api/Korisnici/profile",{headers:{Authorization:"Bearer "+t}});
+        if(!r.ok){ throw new Error(await r.text()); }
+        const u=await r.json();
+        kime.value=u.korisnickoIme||"";
+        email.value=u.email||"";
+        ime.value=u.ime||"";
+        prezime.value=u.prezime||"";
+        telefon.value=u.telefon||"";
+      }catch(e){ show(false, String(e)); }
+
+      profForm.addEventListener("submit", async e=>{
+        e.preventDefault();
+        try{
+          const body = { email: email.value, ime: ime.value, prezime: prezime.value, telefon: telefon.value };
+          const r=await fetch(api+"/api/Korisnici/profile",{method:"PUT",headers:{Authorization:"Bearer "+t,"Content-Type":"application/json"},body:JSON.stringify(body)});
+          if(!r.ok){ show(false, await r.text()); return; }
+          show(true, "Profil ažuriran.");
+        }catch(ex){ show(false, String(ex)); }
+      });
+    })();
+</script>

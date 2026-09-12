@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "Aktivnosti";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>Aktivnosti</h2>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="searchBox" class="form-control" placeholder="Pretraži..." />
+    </div>
+    <div class="col-md-4">
+        <select id="vrstaFilter" class="form-select"></select>
+    </div>
+    <div class="col-md-4">
+        <button id="searchBtn" class="btn btn-primary">Search</button>
+        <a href="/Aktivnosti/Add" class="btn btn-success">Add</a>
+    </div>
+</div>
+
+<table class="table table-striped" id="aktivnostiTable">
+    <thead>
+        <tr>
+            <th>Naziv</th>
+            <th>Vrsta</th>
+            <th>Akcije</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<div class="d-flex justify-content-between">
+    <button id="prevBtn" class="btn btn-secondary">Previous</button>
+    <button id="nextBtn" class="btn btn-secondary">Next</button>
+</div>
+
+<script>
+    let page = 1;
+    async function loadVrste() {
+        const res = await fetch("https://localhost:7024/api/Vrste");
+        const vrste = await res.json();
+        let select = document.getElementById("vrstaFilter");
+        select.innerHTML = `<option value="">Sve vrste</option>`;
+        vrste.forEach(v => {
+            select.innerHTML += `<option value="${v.id}">${v.naziv}</option>`;
+        });
+    }
+
+    async function loadAktivnosti() {
+        const query = document.getElementById("searchBox").value;
+        const vrsta = document.getElementById("vrstaFilter").value;
+        let url = `https://localhost:7024/api/Aktivnosti?page=${page}&query=${query}&vrstaId=${vrsta}`;
+        const res = await fetch(url, { headers: { "Authorization": "Bearer " + localStorage.getItem("jwt") } });
+        const data = await res.json();
+
+        let tbody = document.querySelector("#aktivnostiTable tbody");
+        tbody.innerHTML = "";
+        data.forEach(a => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${a.naziv}</td>
+                    <td>${a.vrstaNaziv}</td>
+                    <td>
+                        <a href="/Aktivnosti/Edit/${a.id}" class="btn btn-sm btn-warning">Edit</a>
+                        <a href="/Aktivnosti/Delete/${a.id}" class="btn btn-sm btn-danger">Delete</a>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    document.getElementById("searchBtn").addEventListener("click", () => { page=1; loadAktivnosti(); });
+    document.getElementById("prevBtn").addEventListener("click", () => { if(page>1) page--; loadAktivnosti(); });
+    document.getElementById("nextBtn").addEventListener("click", () => { page++; loadAktivnosti(); });
+
+    loadVrste();
+    loadAktivnosti();
+</script>

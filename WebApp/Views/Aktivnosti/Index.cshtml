@@ -1,0 +1,145 @@
+﻿@{
+    ViewData["Title"] = "Lista aktivnosti";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h1>Aktivnosti</h1>
+
+<div class="mb-3 d-flex gap-2 align-items-start">
+    <input id="search" class="form-control" style="max-width:300px" placeholder="Pretraži po nazivu" />
+    <select id="vrsta" class="form-select" style="max-width:240px">
+        <option value="">Sve vrste</option>
+    </select>
+    <button id="btnSearch" class="btn btn-primary">Search</button>
+
+    <a id="btnAdd" href="/Aktivnosti/Add" class="btn btn-success ms-auto d-none">Dodaj novu</a>
+</div>
+
+<div id="err" class="alert alert-danger d-none"></div>
+
+<table class="table table-striped table-hover" id="tbl">
+    <thead>
+        <tr>
+            <th>Naziv</th>
+            <th>Opis</th>
+            <th>Lokacija</th>
+            <th>Vrsta</th>
+            <th>Pristupačnosti</th>
+            <th id="thMgmt" class="text-end d-none">Upravljanje</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<nav>
+    <ul class="pagination">
+        <li class="page-item"><button id="pgPrev" class="page-link">Previous</button></li>
+        <span id="pgPages" class="mx-2"></span>
+        <li class="page-item"><button id="pgNext" class="page-link">Next</button></li>
+    </ul>
+</nav>
+
+<script>
+    (function(){
+      const api="https://localhost:7024";
+      const token=localStorage.getItem("jwt");
+      if(!token){ location="/Auth/Login"; return; }
+      const role=(localStorage.getItem("role")||"").toLowerCase();
+      const isAdmin = role === "admin";
+
+      if(isAdmin){ document.getElementById("btnAdd").classList.remove("d-none"); document.getElementById("thMgmt").classList.remove("d-none"); }
+
+      const err=document.getElementById("err");
+      const showErr=m=>{err.textContent=m;err.classList.remove("d-none");};
+      const hideErr=()=>err.classList.add("d-none");
+
+      async function apiGet(path){
+        const r=await fetch(api+path,{headers:{Authorization:"Bearer "+token}});
+        if(!r.ok){ if(r.status===401){ localStorage.removeItem('jwt'); location='/Auth/Login'; return;} throw new Error(await r.text());}
+        return r.json();
+      }
+      async function loadVrste(){
+        const vrste=await apiGet("/api/Vrste");
+        document.getElementById("vrsta").innerHTML = `<option value="">Sve vrste</option>` + vrste.map(v=>`<option value="${v.id}">${v.naziv}</option>`).join("");
+      }
+
+      let page=1, count=10, total=0;
+
+          function renderPager(){
+      const pages = Math.max(1, Math.ceil(total/count));
+      const maxButtons = 7; // širina prozora (po želji)
+      let start = Math.max(1, page - Math.floor(maxButtons/2));
+      let end = Math.min(pages, start + maxButtons - 1);
+      if (end - start + 1 < maxButtons) start = Math.max(1, end - maxButtons + 1);
+
+      const wrap = document.getElementById("pgPages");
+      let html = "";
+
+      if (start > 1) {
+        html += `<button class="btn btn-sm btn-light mx-1" data-p="1">1</button>`;
+        if (start > 2) html += `<span class="mx-1">…</span>`;
+      }
+
+      for (let p = start; p <= end; p++) {
+        html += `<button class="btn btn-sm ${p===page?"btn-primary":"btn-light"} mx-1" data-p="${p}">${p}</button>`;
+      }
+
+      if (end < pages) {
+        if (end < pages-1) html += `<span class="mx-1">…</span>`;
+        html += `<button class="btn btn-sm btn-light mx-1" data-p="${pages}">${pages}</button>`;
+      }
+
+      wrap.innerHTML = html;
+      wrap.querySelectorAll("button").forEach(b=> b.onclick = ()=>{ page=+b.dataset.p; load(); });
+
+      document.getElementById("pgPrev").onclick=()=>{ if(page>1){ page--; load(); } };
+      document.getElementById("pgNext").onclick=()=>{ if(page<pages){ page++; load(); } };
+    }
+
+      async function load(){
+        try{
+          hideErr();
+          const q = encodeURIComponent(document.getElementById("search").value||"");
+          const vrstaId = document.getElementById("vrsta").value || "";
+          const data = await apiGet(`/api/Aktivnosti/search?filter=${q}&page=${page}&count=${count}${vrstaId?`&vrstaId=${vrstaId}`:""}`);
+          total = data.total || 0;
+          const items = data.items || [];
+          const tbody=document.querySelector("#tbl tbody");
+          tbody.innerHTML = items.map(a=>{
+            const prist=(a.aktivnostPristupacnosti||[]).map(ap=>ap.pristupacnost?.naziv).filter(Boolean).join(", ");
+            const mgmt = isAdmin ? `<td class="text-end">
+                <a href="/Aktivnosti/Edit/${a.id}" class="btn btn-sm btn-outline-primary">Uredi</a>
+                <button class="btn btn-sm btn-outline-danger" data-del="${a.id}">Obriši</button>
+              </td>` : `<td class="text-end d-none"></td>`;
+            return `<tr data-id="${a.id}">
+              <td><a href="/Aktivnosti/Details/${a.id}">${a.naziv??""}</a></td>
+              <td>${a.opis??""}</td>
+              <td>${a.lokacija??""}</td>
+              <td>${a.vrsta?.naziv??""}</td>
+              <td>${prist}</td>
+              ${mgmt}
+            </tr>`;
+          }).join("");
+
+          if(isAdmin){
+            tbody.querySelectorAll("[data-del]").forEach(btn=>{
+              btn.onclick = async (ev)=>{
+                ev.preventDefault();
+                const id=btn.getAttribute("data-del");
+                if(!confirm("Obrisati aktivnost?")) return;
+                const r=await fetch(api+"/api/Aktivnosti/"+id,{method:"DELETE",headers:{Authorization:"Bearer "+token}});
+                if(!r.ok){ alert(await r.text()); return; }
+                load();
+              };
+            });
+          }
+
+          renderPager();
+        }catch(e){ showErr(String(e)); }
+      }
+
+      document.getElementById("btnSearch").onclick=()=>{ page=1; load(); };
+      document.getElementById("search").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); page=1; load(); } });
+
+      loadVrste().then(load);
+    })();
+</script>

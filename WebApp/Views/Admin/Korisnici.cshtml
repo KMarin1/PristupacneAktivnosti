@@ -1,0 +1,34 @@
+﻿@{
+    ViewData["Title"] = "Korisnici i recenzije";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>Korisnici i njihove recenzije</h2>
+<div id="err" class="alert alert-danger d-none"></div>
+<table class="table table-striped" id="tbl">
+    <thead><tr><th>Korisničko ime</th><th>Email</th><th>Uloga</th><th>Broj recenzija</th><th>Zadnje recenzije</th></tr></thead>
+    <tbody></tbody>
+</table>
+<script>
+    (async function(){
+      const t=localStorage.getItem("jwt"); if(!t){ location="/Auth/Login"; return; }
+      const api="https://localhost:7024";
+      const err=document.getElementById("err");
+      const showErr=m=>{err.textContent=m;err.classList.remove("d-none");};
+      try{
+        const r=await fetch(api+"/api/Korisnici/recenzije",{headers:{Authorization:"Bearer "+t}});
+        if(!r.ok){ throw new Error(await r.text()); }
+        const data=await r.json();
+        const tb=document.querySelector("#tbl tbody");
+        tb.innerHTML = data.map(u=>{
+          const z = (u.zadnje||[]).map(x=>`<div>★${x.ocjena} · a#${x.aktivnostId} · ${x.komentar??""}</div>`).join("");
+          return `<tr>
+            <td>${u.korisnickoIme??""}</td>
+            <td>${u.email??""}</td>
+            <td>${u.uloga??""}</td>
+            <td>${u.recenzijaCount||0}</td>
+            <td>${z||"<span class='text-muted'>—</span>"}</td>
+          </tr>`;
+        }).join("");
+      }catch(e){ showErr(String(e)); }
+    })();
+</script>

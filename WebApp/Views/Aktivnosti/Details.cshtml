@@ -1,0 +1,109 @@
+﻿@{
+    ViewData["Title"] = "Detalji aktivnosti";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var id = Context.Request.RouteValues["id"]?.ToString() ?? "";
+}
+<h2>Detalji aktivnosti</h2>
+<a class="btn btn-secondary mb-3" href="/Aktivnosti/Index">Natrag</a>
+
+<div id="err" class="alert alert-danger d-none"></div>
+
+<dl class="row" id="dl">
+    <dt class="col-sm-3">Naziv</dt>
+    <dd class="col-sm-9" id="dNaziv"></dd>
+    <dt class="col-sm-3">Vrsta</dt>
+    <dd class="col-sm-9" id="dVrsta"></dd>
+    <dt class="col-sm-3">Lokacija</dt>
+    <dd class="col-sm-9" id="dLok"></dd>
+    <dt class="col-sm-3">Kontakt</dt>
+    <dd class="col-sm-9" id="dKon"></dd>
+    <dt class="col-sm-3">Opis</dt>
+    <dd class="col-sm-9" id="dOpis"></dd>
+    <dt class="col-sm-3">Pristupačnosti</dt>
+    <dd class="col-sm-9" id="dPris"></dd>
+</dl>
+
+<hr />
+<h4>Recenzije</h4>
+<div id="recList" class="vstack gap-2"></div>
+
+<hr />
+<h4>Dodaj recenziju</h4>
+<form id="recForm" class="w-100" style="max-width:520px">
+    <div class="mb-2">
+        <label class="form-label">Ocjena (1-5)</label>
+        <input id="recOcj" type="number" min="1" max="5" class="form-control" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Pristupačnost (opcionalno)</label>
+        <select id="recPris" class="form-select"></select>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Komentar</label>
+        <textarea id="recKom" class="form-control"></textarea>
+    </div>
+    <button class="btn btn-success">Spremi recenziju</button>
+</form>
+
+<script>
+    (function(){
+      const api="https://localhost:7024"; const id="@id";
+      const t=localStorage.getItem("jwt"); if(!t){ location="/Auth/Login"; return; }
+
+      const err=document.getElementById("err");
+      const showErr=m=>{err.textContent=m;err.classList.remove("d-none");};
+      const hideErr=()=>err.classList.add("d-none");
+
+      async function apiGet(p){ const r=await fetch(api+p,{headers:{Authorization:"Bearer "+t}}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+
+      function stars(n){ n=Number(n)||0; n=Math.max(0,Math.min(5,n)); return "★".repeat(n)+"☆".repeat(5-n); }
+
+      async function load(){
+        try{
+          hideErr();
+          const a = await apiGet("/api/Aktivnosti/"+id);
+          dNaziv.textContent=a.naziv||""; dVrsta.textContent=a.vrsta?.naziv||""; dLok.textContent=a.lokacija||"";
+          dKon.textContent=a.kontakt||""; dOpis.textContent=a.opis||"";
+          const pris=(a.aktivnostPristupacnosti||[]).map(x=>x.pristupacnost?.naziv).filter(Boolean);
+          dPris.textContent = pris.length ? pris.join(", ") : "—";
+
+          // punjenje pristupačnosti u select za recenziju
+          recPris.innerHTML = (a.aktivnostPristupacnosti||[])
+            .map(x=>`<option value="${x.pristupacnostId}">${x.pristupacnost?.naziv||x.pristupacnostId}</option>`).join("");
+
+          const recs = Array.isArray(a.recenzije)?a.recenzije:[];
+          recList.innerHTML = recs.length===0 ? `<div class="text-muted">Nema recenzija.</div>` :
+            recs.map(r=>`<div class="border rounded p-2">
+              <div class="d-flex justify-content-between">
+                <div>${stars(r.ocjena)}</div>
+                <small class="text-muted">${r.pristupacnost?.naziv??""}</small>
+              </div>
+              ${r.komentar?`<div class="mt-1">${r.komentar}</div>`:""}
+            </div>`).join("");
+        }catch(e){ showErr(String(e)); }
+      }
+
+      recForm.addEventListener("submit", async e=>{
+        e.preventDefault();
+        try{
+          const body = {
+            aktivnostId: Number(id),
+            pristupacnostId: Number(recPris.value||0) || null,
+            ocjena: Number(recOcj.value),
+            komentar: recKom.value||null
+          };
+          const r=await fetch(api+"/api/Recenzije",{
+            method:"POST",
+            headers:{ "Content-Type":"application/json", Authorization:"Bearer "+t },
+            body: JSON.stringify(body)
+          });
+          if(!r.ok){ alert(await r.text()); return; }
+          recOcj.value=""; recKom.value="";
+          await load();
+          alert("Recenzija spremljena.");
+        }catch(ex){ alert(String(ex)); }
+      });
+
+      load();
+    })();
+</script>

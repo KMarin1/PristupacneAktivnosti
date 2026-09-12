@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Uredi Vrstu";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var id = ViewBag.Id ?? Context.Request.RouteValues["id"];
+}
+<h2>Uredi Vrstu</h2>
+
+<div id="err" class="alert alert-danger d-none"></div>
+
+<form id="f" class="w-100" style="max-width:420px">
+    <div class="mb-3">
+        <label class="form-label">Naziv</label>
+        <input id="naziv" class="form-control" required maxlength="120" />
+    </div>
+    <button class="btn btn-primary">Spremi</button>
+    <a href="/Vrste/Index" class="btn btn-secondary">Odustani</a>
+</form>
+
+<script>
+    (async function(){
+      const api="https://localhost:7024";
+      const t = localStorage.getItem("jwt");
+      const role=(localStorage.getItem("role")||"").toLowerCase();
+      if(!t || role!=="admin"){ location="/Auth/Login"; return; }
+
+      const id="@id";
+      const err=document.getElementById("err");
+      const showErr=m=>{err.textContent=m;err.classList.remove("d-none");};
+      const hideErr=()=>err.classList.add("d-none");
+
+      try{
+        const r=await fetch(api+"/api/Vrste",{headers:{Authorization:"Bearer "+t}});
+        const lista=await r.json();
+        const item=lista.find(x=>String(x.id)===String(id));
+        if(!item){ showErr("Vrsta nije pronađena."); return; }
+        document.getElementById("naziv").value=item.naziv;
+      }catch(e){ showErr(String(e)); }
+
+      document.getElementById("f").addEventListener("submit", async e=>{
+        e.preventDefault(); hideErr();
+        try{
+          const body={ id:+id, naziv: document.getElementById("naziv").value.trim() };
+          const r=await fetch(api+"/api/Vrste/"+id,{method:"PUT",headers:{Authorization:"Bearer "+t,"Content-Type":"application/json"},body:JSON.stringify(body)});
+          if(!r.ok){ showErr(await r.text()); return; }
+          location="/Vrste/Index";
+        }catch(ex){ showErr(String(ex)); }
+      });
+    })();
+</script>

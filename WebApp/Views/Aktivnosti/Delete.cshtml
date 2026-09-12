@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Delete Aktivnost";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var id = Context.Request.Path.ToString().Split('/').Last();
+}
+<h2>Obriši Aktivnost</h2>
+<p>Jeste li sigurni da želite obrisati ovu aktivnost?</p>
+
+<form id="deleteForm">
+    <button type="submit" class="btn btn-danger">Obriši</button>
+    <a href="/Aktivnosti/Index" class="btn btn-secondary">Odustani</a>
+</form>
+
+<script>
+    const id = "@id";
+    document.getElementById("deleteForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await fetch("https://localhost:7024/api/Aktivnosti/" + id, {
+            method: "DELETE",
+            headers: { "Authorization": "Bearer " + localStorage.getItem("jwt") }
+        });
+        window.location.href = "/Aktivnosti/Index";
+    });
+</script>

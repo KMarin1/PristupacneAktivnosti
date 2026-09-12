@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Vrste";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>Vrste</h2>
+
+<div class="d-flex mb-3">
+    <a href="/Vrste/Add" class="btn btn-success ms-auto">Dodaj vrstu</a>
+</div>
+
+<div id="err" class="alert alert-danger d-none"></div>
+
+<table class="table table-striped" id="tbl">
+    <thead><tr><th>Naziv</th><th class="text-end">Akcije</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    (async function(){
+      const api="https://localhost:7024";
+      const t = localStorage.getItem("jwt");
+      const role = (localStorage.getItem("role")||"").toLowerCase();
+
+      if(!t || role!=="admin"){ location="/Auth/Login"; return; }
+
+      const err=document.getElementById("err");
+      const showErr=m=>{err.textContent=m;err.classList.remove("d-none");};
+      const hideErr=()=>err.classList.add("d-none");
+
+      async function load(){
+        hideErr();
+        try{
+          const r=await fetch(api+"/api/Vrste",{headers:{Authorization:"Bearer "+t}});
+          if(!r.ok) throw new Error(await r.text());
+          const data=await r.json();
+          const tb=document.querySelector("#tbl tbody");
+          tb.innerHTML = data.map(v=>`
+            <tr>
+              <td>${v.naziv}</td>
+              <td class="text-end">
+                <a href="/Vrste/Edit/${v.id}" class="btn btn-sm btn-outline-primary">Uredi</a>
+                <button data-id="${v.id}" class="btn btn-sm btn-outline-danger ms-2">Obriši</button>
+              </td>
+            </tr>`).join("");
+
+          tb.querySelectorAll("[data-id]").forEach(btn=>{
+            btn.onclick=async ()=>{
+              if(!confirm("Obrisati vrstu?")) return;
+              const id=btn.getAttribute("data-id");
+              const del=await fetch(api+"/api/Vrste/"+id,{method:"DELETE",headers:{Authorization:"Bearer "+t}});
+              if(!del.ok){ alert(await del.text()); return; }
+              load();
+            };
+          });
+        }catch(e){ showErr(String(e)); }
+      }
+      load();
+    })();
+</script>

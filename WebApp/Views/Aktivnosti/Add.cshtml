@@ -1,0 +1,75 @@
+﻿@{
+    ViewData["Title"] = "Nova Aktivnost";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>Nova Aktivnost</h2>
+
+<form id="addForm" class="w-50">
+    <div class="mb-3"><label class="form-label">Naziv</label><input id="naziv" class="form-control" required /></div>
+    <div class="mb-3"><label class="form-label">Opis</label><textarea id="opis" class="form-control"></textarea></div>
+    <div class="mb-3"><label class="form-label">Lokacija</label><input id="lokacija" class="form-control" required /></div>
+    <div class="mb-3"><label class="form-label">Kontakt (email)</label><input id="kontakt" type="email" class="form-control" /></div>
+    <div class="mb-3"><label class="form-label">Vrsta</label><select id="vrstaId" class="form-select" required></select></div>
+    <div class="mb-3"><label class="form-label">Pristupačnosti</label><select id="pristupaIds" class="form-select" multiple size="6" required></select></div>
+
+    <fieldset class="border rounded p-3 mb-3">
+        <legend class="float-none w-auto px-2 fs-6">Početna recenzija (opcionalno)</legend>
+        <div class="mb-2"><label class="form-label">Ocjena (1-5)</label><input id="recOcj" type="number" min="1" max="5" class="form-control" /></div>
+        <div><label class="form-label">Komentar</label><textarea id="recKom" class="form-control"></textarea></div>
+    </fieldset>
+
+    <button class="btn btn-success">Spremi</button>
+    <a href="/Aktivnosti/Index" class="btn btn-secondary">Odustani</a>
+</form>
+
+<div id="err" class="alert alert-danger d-none mt-3"></div>
+
+<script>
+    const api="https://localhost:7024"; const err=document.getElementById("err");
+    const showErr=x=>{err.textContent=x;err.classList.remove("d-none");};
+
+    async function authGet(path){
+      const t = localStorage.getItem("jwt"); if(!t){ location="/Auth/Login"; return; }
+      const r = await fetch(api+path, { headers:{ Authorization:"Bearer "+t }});
+      if(!r.ok){ if(r.status===401){ localStorage.removeItem('jwt'); location='/Auth/Login'; return; } throw new Error(await r.text());}
+      return r.json();
+    }
+
+    async function loadLookups(){
+      const [vrste, prist] = await Promise.all([authGet("/api/Vrste"), authGet("/api/Pristupacnost")]);
+      document.getElementById("vrstaId").innerHTML = vrste.map(v=>`<option value="${v.id}">${v.naziv}</option>`).join("");
+      document.getElementById("pristupaIds").innerHTML = prist.map(p=>`<option value="${p.id}">${p.naziv}</option>`).join("");
+    }
+
+    document.getElementById("addForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const t = localStorage.getItem("jwt"); if(!t){ location="/Auth/Login"; return; }
+      const prSel = document.getElementById("pristupaIds");
+      const selected = Array.from(prSel.selectedOptions).map(o=>+o.value);
+
+      const recs=[]; const ocj=document.getElementById("recOcj").value; const kom=document.getElementById("recKom").value;
+      if(ocj){ recs.push({ ocjena:+ocj, komentar:kom||null, aktivnostId:0, pristupacnostId:selected[0] }); }
+
+      const body = {
+        naziv: document.getElementById("naziv").value,
+        opis: document.getElementById("opis").value || null,
+        lokacija: document.getElementById("lokacija").value,
+        kontakt: document.getElementById("kontakt").value || null,
+        vrstaId: +document.getElementById("vrstaId").value,
+        pristupacnostiIds: selected,
+        recenzije: recs.length? recs : null
+      };
+
+      try{
+        const r = await fetch(api+"/api/Aktivnosti", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json", Authorization:"Bearer "+t },
+          body: JSON.stringify(body)
+        });
+        if(!r.ok){ showErr("API error: "+await r.text()); return; }
+        location="/Aktivnosti/Index";
+      }catch(err){ showErr(String(err)); }
+    });
+
+    loadLookups().catch(e=>showErr(String(e)));
+</script>

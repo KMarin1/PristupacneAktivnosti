@@ -1,0 +1,78 @@
+﻿@{
+    ViewData["Title"] = "Prijava / Registracija";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container" style="max-width:960px">
+    @if (ViewBag.Msg != null)
+    {
+        <div class="alert alert-success">@ViewBag.Msg</div>
+    }
+
+    <div class="row g-4">
+        <!-- Login -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title mb-3">Prijava</h3>
+
+                    <form asp-action="Login" asp-controller="Auth" method="post" class="w-100">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label">Korisničko ime</label>
+                            <input name="korisnickoIme" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Lozinka</label>
+                            <input name="lozinka" type="password" class="form-control" required />
+                        </div>
+
+                        <button class="btn btn-primary w-100">Prijava</button>
+                    </form>
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger mt-3">@ViewBag.Error</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Register -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title mb-3">Registracija</h3>
+
+                    <form asp-action="Register" asp-controller="Auth" method="post" id="registerForm">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Korisničko ime</label>
+                            <input type="text" name="korisnickoIme" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Lozinka</label>
+                            <input type="password" name="lozinka" class="form-control" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">Registracija</button>
+
+                        @if (ViewBag.RegisterError != null)
+                        {
+                            <div class="alert alert-danger mt-3">@ViewBag.RegisterError</div>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

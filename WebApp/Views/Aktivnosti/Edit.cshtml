@@ -1,0 +1,130 @@
+﻿@{
+    ViewData["Title"] = "Edit Aktivnost";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var id = Context.Request.RouteValues["id"]?.ToString() ?? Context.Request.Path.ToString().Split('/').Last();
+}
+<h2>Uredi Aktivnost</h2>
+
+<div id="err" class="alert alert-danger d-none"></div>
+<form id="editForm" class="w-50">
+    <div class="mb-3">
+        <label class="form-label">Naziv</label>
+        <input type="text" id="naziv" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Opis</label>
+        <textarea id="opis" class="form-control"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Lokacija</label>
+        <input type="text" id="lokacija" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Kontakt (email)</label>
+        <input type="email" id="kontakt" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Vrsta</label>
+        <select id="vrstaId" class="form-select" required></select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Pristupačnosti</label>
+        <select id="pristupaIds" class="form-select" multiple size="6" required></select>
+        <div class="form-text">Drži CTRL/⌘ za višestruki odabir.</div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Spremi promjene</button>
+    <a href="/Aktivnosti/Index" class="btn btn-secondary">Odustani</a>
+</form>
+
+<script>
+    (function(){
+      const api = "https://localhost:7024";
+      const token = localStorage.getItem("jwt");
+      if(!token){ location="/Auth/Login"; return; }
+
+      const id = "@id";
+      const err = document.getElementById("err");
+      const showErr = (m)=>{ err.textContent = m; err.classList.remove("d-none"); };
+      const hideErr = ()=> err.classList.add("d-none");
+
+      async function apiGet(path){
+        const r = await fetch(api+path, { headers:{ Authorization:"Bearer "+token }});
+        if(!r.ok){
+          if(r.status===401){ localStorage.removeItem('jwt'); location='/Auth/Login'; return; }
+          throw new Error(await r.text());
+        }
+        return r.json();
+      }
+
+      async function loadLookups(){
+        // vrste
+        const vrste = await apiGet("/api/Vrste");
+        document.getElementById("vrstaId").innerHTML =
+          vrste.map(v=>`<option value="${v.id}">${v.naziv}</option>`).join("");
+
+        // pristupacnosti
+        const pr = await apiGet("/api/Pristupacnost");
+        document.getElementById("pristupaIds").innerHTML =
+          pr.map(p=>`<option value="${p.id}">${p.naziv}</option>`).join("");
+      }
+
+      function selectMulti(selectEl, idList){
+        const set = new Set((idList||[]).map(x=>String(x)));
+        [...selectEl.options].forEach(o => { o.selected = set.has(o.value); });
+      }
+
+      async function loadAktivnost(){
+        const a = await apiGet("/api/Aktivnosti/"+id);
+        // inputs
+        document.getElementById("naziv").value    = a.naziv ?? "";
+        document.getElementById("opis").value     = a.opis ?? "";
+        document.getElementById("lokacija").value = a.lokacija ?? "";
+        document.getElementById("kontakt").value  = a.kontakt ?? "";
+        document.getElementById("vrstaId").value  = a.vrstaId;
+
+        // pick selected pristupačnosti
+        const selected = (a.aktivnostPristupacnosti||[]).map(ap => ap.pristupacnostId);
+        selectMulti(document.getElementById("pristupaIds"), selected);
+      }
+
+      document.getElementById("editForm").addEventListener("submit", async (e)=>{
+        e.preventDefault(); hideErr();
+        const body = {
+          naziv:    document.getElementById("naziv").value,
+          opis:     document.getElementById("opis").value || null,
+          lokacija: document.getElementById("lokacija").value,
+          kontakt:  document.getElementById("kontakt").value || null,
+          vrstaId:  Number(document.getElementById("vrstaId").value),
+          pristupacnostiIds: Array.from(document.getElementById("pristupaIds").selectedOptions).map(o=>Number(o.value))
+          // Recenzije se NE šalju u edit-u
+        };
+
+        try{
+          const r = await fetch(api+"/api/Aktivnosti/"+id, {
+            method:"PUT",
+            headers:{ "Content-Type":"application/json", Authorization:"Bearer "+token },
+            body: JSON.stringify(body)
+          });
+          if(!r.ok){
+            const t = await r.text();
+            showErr(`API error (${r.status}): ` + t);
+            return;
+          }
+          location="/Aktivnosti/Index";
+        }catch(ex){
+          showErr(String(ex));
+        }
+      });
+
+      // init
+      loadLookups()
+        .then(loadAktivnost)
+        .catch(e => showErr(String(e)));
+    })();
+</script>
