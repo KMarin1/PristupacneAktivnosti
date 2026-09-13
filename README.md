@@ -2,7 +2,7 @@
 
 A directory of venues and activities listed by how accessible they are — wheelchair
 access, accessible toilets, entrance ramps, lifts — with search and filtering by venue
-type. University project (TVZ, Web Technologies), 2025/26.
+type. University project (Algebra, Web Technologies).
 
 Two ASP.NET Core projects: a REST API and a separate MVC web client that talks to it over
 HTTP. The split was the point of the assignment, so the API has no views and the client
